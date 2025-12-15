@@ -214,6 +214,7 @@ void updateAnimation(AnimationInstance* animated, std::string current_animation,
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow)
 {
+
 	Window window;
 	while (ShowCursor(FALSE) >= -1);
 	window.create(WIDTH, HEIGHT, "My Window");
