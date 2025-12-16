@@ -143,6 +143,8 @@
   <ItemGroup>
     <ClInclude Include="Animation.h" />
     <ClInclude Include="HandleMovement.h" />
+    <ClInclude Include="InstanceManagement.h" />
+    <ClInclude Include="ModelHolderClasses.h" />
     <ClInclude Include="Source\Core.h" />
     <ClInclude Include="Source\GEMLoader.h" />
     <ClInclude Include="Source\Maths.h" />

@@ -38,7 +38,7 @@ Matrix HandleMovement::getView(Window& window, float dt) {
 			lean -= dt / lean_time / 2;
 		}
 	}
-	up -= cross * 0.2 * lean;
+	up += cross * 0.2 * lean;
 	from += cross * lean;
 	return Matrix::lookAt(from, from + to, up);
 }
