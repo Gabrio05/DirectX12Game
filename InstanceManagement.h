@@ -20,14 +20,20 @@ public:
 		planes.back()->init(core, psos, shaders);
 	}
 
-	void staticModelLoad(Core* core, std::string filename, PSOManager* psos, Shaders* shaders) {
+	void staticModelLoad(Core* core, std::string filename, PSOManager* psos, Shaders* shaders, TextureManager* tex_man = nullptr) {
 		static_models.push_back(std::make_unique<StaticModel>());
-		static_models.back()->load(core, filename, psos, shaders);
+		static_models.back()->load(core, filename, psos, shaders, tex_man);
 	}
 
-	void animatedModelLoad(Core* core, std::string filename, PSOManager* psos, Shaders* shaders, TextureManager* texture_manager) {
+	void staticModelTextureLoad(Core* core, std::string tex_filename) {
+		static_models.back()->texture_manager->load(core, tex_filename);
+	}
+
+	void animatedModelLoad(Core* core, std::string filename, PSOManager* psos, 
+						   Shaders* shaders, TextureManager* tex_manager, std::string tex_filename) {
 		animated_models.push_back(std::make_unique<AnimatedModel>());
-		animated_models.back()->load(core, filename, psos, shaders, texture_manager);
+		animated_models.back()->load(core, filename, psos, shaders, tex_manager);
+		animated_models.back()->texture_manager->load(core, tex_filename);
 		AnimationInstance animatedInstance;
 		animatedInstance.init(&animated_models.back()->animation, 0);
 		animated_instances.push_back(animatedInstance);

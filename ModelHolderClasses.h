@@ -68,7 +68,8 @@ class StaticModel
 public:
 	std::vector<Mesh*> meshes;
 	std::vector<std::string> textureFilenames;
-	void load(Core* core, std::string filename, PSOManager* psos, Shaders* shaders)
+	TextureManager* texture_manager;
+	void load(Core* core, std::string filename, PSOManager* psos, Shaders* shaders, TextureManager* tex_man = nullptr)
 	{
 		GEMLoader::GEMModelLoader loader;
 		std::vector<GEMLoader::GEMMesh> gemmeshes;
@@ -87,20 +88,24 @@ public:
 			mesh->init(core, vertices, gemmeshes[i].indices);
 			meshes.push_back(mesh);
 		}
-		shaders->load(core, "StaticModelUntextured", "VS.txt", "PS.txt");
-		psos->createPSO(core, "StaticModelPSO", shaders->find("StaticModelUntextured")->vs, shaders->find("StaticModelUntextured")->ps, VertexLayoutCache::getStaticLayout());
+		shaders->load(core, "StaticModelTextured", "VS.txt", "PS.txt");
+		psos->createPSO(core, "StaticModelPSO", shaders->find("StaticModelTextured")->vs, shaders->find("StaticModelTextured")->ps, VertexLayoutCache::getStaticLayout());
+		texture_manager = tex_man;
 	}
 	void updateWorld(Shaders* shaders, Matrix& w)
 	{
-		shaders->updateConstantVS("StaticModelUntextured", "staticMeshBuffer", "W", &w);
+		shaders->updateConstantVS("StaticModelTextured", "staticMeshBuffer", "W", &w);
 	}
 	void draw(Core* core, PSOManager* psos, Shaders* shaders, Matrix& vp)
 	{
-		shaders->updateConstantVS("StaticModelUntextured", "staticMeshBuffer", "VP", &vp);
-		shaders->apply(core, "StaticModelUntextured");
+		shaders->updateConstantVS("StaticModelTextured", "staticMeshBuffer", "VP", &vp);
+		shaders->apply(core, "StaticModelTextured");
 		psos->bind(core, "StaticModelPSO");
 		for (int i = 0; i < meshes.size(); i++)
 		{
+			if (texture_manager) {
+				shaders->updateTexturePS(core, "StaticModelTextured", "tex", texture_manager->find(textureFilenames[i]));
+			}
 			meshes[i]->draw(core);
 		}
 	}
@@ -169,7 +174,6 @@ public:
 			animation.animations.insert({ name, aseq });
 		}
 		texture_manager = tex_man;
-		texture_manager->load(core, "Models/Textures/T-rex_Base_Color_alb.png");
 	}
 	void updateWorld(Shaders* shaders, Matrix& w)
 	{

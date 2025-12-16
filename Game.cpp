@@ -42,7 +42,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	InstanceManagement instance_manager;
 	instance_manager.planeInit(&core, &psos, &shaders);
 	instance_manager.staticModelLoad(&core, "Models/acacia_003.gem", &psos, &shaders);
-	instance_manager.animatedModelLoad(&core, "Models/TRex.gem", &psos, &shaders, &texture_manager);
+	instance_manager.staticModelLoad(&core, "Models/Scraggly_Bush_01a.gem", &psos, &shaders, &texture_manager);
+	instance_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Scraggly_Bushes_01a_ALB.png");
+	instance_manager.staticModelLoad(&core, "Models/Vase_Set_66a.gem", &psos, &shaders, &texture_manager);
+	instance_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Vase_Set_66a_ALB.png");
+	instance_manager.animatedModelLoad(&core, "Models/TRex.gem", &psos, &shaders, &texture_manager, "Models/Textures/T-rex_Base_Color_alb.png");
 
 	Timer timer;
 	float t = 0;
@@ -62,7 +66,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		Matrix v = movement_handler.getView(window, dt);
 		vp = v * p;
 
-		shaders.updateConstantVS("StaticModelUntextured", "staticMeshBuffer", "VP", &vp);
+		//shaders.updateConstantVS("StaticModelUntextured", "staticMeshBuffer", "VP", &vp);
+		//shaders.updateConstantVS("StaticModelTextured", "staticMeshBuffer", "VP", &vp);
 		core.beginRenderPass();
 
 
@@ -76,6 +81,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		W = Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f)) * Matrix::translation(Vec3(10, 0, 0));
 		instance_manager.static_models.at(0)->updateWorld(&shaders, W);
 		instance_manager.static_models.at(0)->draw(&core, &psos, &shaders, vp);
+
+		W = Matrix::scaling(Vec3(2.0f, 2.0f, 2.0f)) * Matrix::translation(Vec3(15, 0, 0));
+		instance_manager.static_models.at(1)->updateWorld(&shaders, W);
+		instance_manager.static_models.at(1)->draw(&core, &psos, &shaders, vp);
+
+		W = Matrix::scaling(Vec3(100.0f, 100.0f, 100.0f)) * Matrix::translation(Vec3(-5, 0, -5));
+		instance_manager.static_models.at(2)->updateWorld(&shaders, W);
+		instance_manager.static_models.at(2)->draw(&core, &psos, &shaders, vp);
 
 		updateAnimation(&instance_manager.animated_instances.at(0), "roar", dt);
 		shaders.updateConstantVS("AnimatedUntextured", "staticMeshBuffer", "VP", &vp);
