@@ -96,6 +96,7 @@ public:
 				}
 			}
 			textureFilenames.push_back(gemmeshes[i].material.find("albedo").getValue());
+			//textureFilenames.push_back(gemmeshes[i].material.find("normal").getValue());  Why is this not necessary?
 			mesh->init(core, vertices, gemmeshes[i].indices);
 			meshes.push_back(mesh);
 		}

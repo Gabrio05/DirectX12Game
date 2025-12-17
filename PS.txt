@@ -1,4 +1,5 @@
 Texture2D tex : register(t0);
+Texture2D normalMap : register(t1);
 SamplerState samplerLinear : register(s0);
 struct PS_INPUT
 {
@@ -13,8 +14,16 @@ float4 PS(PS_INPUT input) : SV_Target0
  if (colour.a < 0.5) {
   discard;
  }
+ float4 the_normal = normalMap.Sample(samplerLinear, input.TexCoords);
+ the_normal.rgb = the_normal.rgb * 2.0 - 1.0;
+ float3 N = normalize(input.Normal);
+ float3 T = normalize(input.Tangent);
+ float3 B = normalize(cross(N, T));
+ float3x3 TBN = float3x3(T, B, N);
+ the_normal.rgb = normalize(mul(the_normal.rgb, TBN));
+
  float3 incoming_light = normalize(float3(-1.0, 1.0, -1.0));
- colour = float4((colour / 3.14159265).xyz * 10 * (max(dot(incoming_light, input.Normal), 0) + 0.1), colour.a);
+ colour.rgb = (colour / 3.14159265).xyz * 10 * (max(dot(incoming_light, the_normal.rgb), 0) + 0.1);
  colour.rgb = min(sqrt(colour.rgb), 1.0);
  return colour;
 }

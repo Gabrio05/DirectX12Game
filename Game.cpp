@@ -119,8 +119,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	instance_manager.staticModelLoad("Models/acacia_003.gem", Vec3(0.01f, 0.01f, 0.01f), Vec3(5, 0, 0));
 	instance_manager.staticModelLoad("Models/Scraggly_Bush_01a.gem", Vec3(2.0f, 2.0f, 2.0f), Vec3(0, 0, 18), true);
 	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Scraggly_Bushes_01a_ALB.png");
+	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Scraggly_Bushes_01a_NH.png");
 	instance_manager.staticModelLoad("Models/Vase_Set_66a.gem", Vec3(10.0f, 10.0f, 10.0f), Vec3(-1, 0, 5), true);
 	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Vase_Set_66a_ALB.png");
+	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Vase_Set_66a_NH.png");
 	instance_manager.animatedModelLoad("Models/TRex.gem", "Models/Textures/T-rex_Base_Color_alb.png", Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f)));
 
 	ObjectThrowing vase_manager{};
