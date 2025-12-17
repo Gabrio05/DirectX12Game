@@ -14,7 +14,7 @@ float4 PS(PS_INPUT input) : SV_Target0
   discard;
  }
  float3 incoming_light = normalize(float3(-1.0, 1.0, -1.0));
- colour = float4((colour / 3.14159265).xyz * 10 * (max(dot(incoming_light, input.Normal), 0) + 0.0), colour.a);
+ colour = float4((colour / 3.14159265).xyz * 10 * (max(dot(incoming_light, input.Normal), 0) + 0.1), colour.a);
  colour.rgb = min(sqrt(colour.rgb), 1.0);
  return colour;
 }

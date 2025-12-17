@@ -78,9 +78,12 @@ public:
 		model_manager.planes[0]->draw(core, psos, shaders, view_perspective_matrix);
 	}
 	void staticModelDraw(int i) {
-		Matrix W = static_rotation_quaternions[i].toMatrix() * Matrix::scaling(static_scaling_vectors[i]) * Matrix::translation(static_offset_vectors[i]);
-		model_manager.static_models.at(i)->updateWorld(shaders, W);
-		model_manager.static_models.at(i)->draw(core, psos, shaders, view_perspective_matrix);
+		StaticModel* the_static_model = model_manager.static_models.at(i).get();
+		Vec3 mid_point = (the_static_model->min_point + the_static_model->max_point) / 2.0f;
+		Matrix W = Matrix::translation(-mid_point) * static_rotation_quaternions[i].toMatrix() * Matrix::translation(mid_point) 
+			* Matrix::scaling(static_scaling_vectors[i]) * Matrix::translation(static_offset_vectors[i]);
+		the_static_model->updateWorld(shaders, W);
+		the_static_model->draw(core, psos, shaders, view_perspective_matrix);
 	}
 	void animatedModelDraw() {
 		model_manager.animated_models.at(0)->draw(core, psos, shaders, &model_manager.animated_instances.at(0), view_perspective_matrix, animated_world_matrix);

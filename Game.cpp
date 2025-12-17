@@ -20,6 +20,81 @@ void updateAnimation(AnimationInstance* animated, std::string current_animation,
 	}
 }
 
+Vec3 interpolate(Vec3 p1, Vec3 p2, float t)
+{
+	return ((p1 * (1.0f - t)) + (p2 * t));
+}
+
+Quaternion MakeRotationQuaternion(Vec3 axis, float angle)
+{
+	axis.normalize();
+	float half = 0.5f * angle;
+	float s = sinf(half);
+	Quaternion q;
+	q.a = axis.x * s;
+	q.b = axis.y * s;
+	q.c = axis.z * s;
+	q.d = cosf(half);
+	return q;
+}
+
+class rotationHolder {
+public:
+	inline static const float rotation_time = 2.0f;
+	float current_t = 0.0f;
+	Vec3 rotation_axis = Vec3(1, 0, 0);
+
+	Quaternion updateRotation(float dt) {
+		current_t += dt / rotation_time;
+		if (current_t >= 1.0f) { current_t = 0; }
+		return MakeRotationQuaternion(rotation_axis, M_PI * 2 * current_t);
+	}
+};
+
+class ThrownObject {
+public:
+	rotationHolder rotation{};
+	Vec3 starting_position;
+	Vec3 target_offset;
+	float time_to_player;
+	float current_time = 0;
+
+	ThrownObject(Vec3 start, float time, Vec3 offset) {
+		starting_position = start;
+		target_offset = offset;
+		time_to_player = time;
+	}
+
+	Quaternion update(float dt) {
+		current_time += dt;
+		return rotation.updateRotation(dt);
+	}
+
+	bool hasPastPlayer() { return current_time > time_to_player; }
+	bool shouldDespawn() { return current_time > 2 * time_to_player; }
+};
+
+class ObjectThrowing {
+public:
+	std::vector<ThrownObject> thrown_objects;
+	const Vec3 target_position = Vec3(0, 1, 15);  // base target position is the same for all (add offset to it)
+	void throwVase(Vec3 start, float time, Vec3 offset) {
+		thrown_objects.push_back({ start, time, offset });
+	}
+
+	void updateThrownObjects(InstanceManager* manager, float dt) {
+		for (ThrownObject& object : thrown_objects) {
+			const int vase_index = 2;
+			Vec3 target = target_position + object.target_offset;
+			Vec3 end = (target - object.starting_position) * 2 + object.starting_position;
+			manager->static_offset_vectors.at(vase_index) = interpolate(object.starting_position, end, (object.current_time + dt) / object.time_to_player / 2);
+			manager->static_rotation_quaternions.at(vase_index) = object.update(dt);
+			manager->staticModelDraw(vase_index);
+		}
+		std::erase_if(thrown_objects, [](ThrownObject object) { return object.shouldDespawn(); });
+	}
+};
+
 #define WIDTH 1280.0f
 #define HEIGHT 720.0f
 
@@ -48,6 +123,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Vase_Set_66a_ALB.png");
 	instance_manager.animatedModelLoad("Models/TRex.gem", "Models/Textures/T-rex_Base_Color_alb.png", Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f)));
 
+	ObjectThrowing vase_manager{};
+	int thrown_vases = 0;
+
 	Timer timer;
 	float t = 0;
 	while (true)
@@ -71,7 +149,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		//shaders.updateConstantVS("StaticModelTextured", "staticMeshBuffer", "VP", &vp);
 		core.beginRenderPass();
 
-
 		instance_manager.planeDraw();
 
 		instance_manager.static_offset_vectors.at(0) = Vec3(5, 0, 0);
@@ -79,8 +156,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		instance_manager.static_offset_vectors.at(0) = Vec3(10, 0, 0);
 		instance_manager.staticModelDraw(0);
 		instance_manager.staticModelDraw(1);
-		instance_manager.static_offset_vectors.at(2) = Vec3(10, 0, 10);
-		instance_manager.staticModelDraw(2);
+		if (t > thrown_vases * 5.0f) {
+			vase_manager.throwVase(Vec3(0, 0, 0), 4, Vec3(thrown_vases, 0, 0));
+			thrown_vases++;
+		}
+		vase_manager.updateThrownObjects(&instance_manager, dt);
 
 		updateAnimation(&instance_manager.model_manager.animated_instances.at(0), "roar", dt);
 		instance_manager.animated_world_matrix = Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f));

@@ -69,6 +69,8 @@ public:
 	std::vector<Mesh*> meshes;
 	std::vector<std::string> textureFilenames;
 	TextureManager* texture_manager;
+	Vec3 min_point{ INFINITY, INFINITY, INFINITY };
+	Vec3 max_point{ -INFINITY, -INFINITY, -INFINITY };
 	void load(Core* core, std::string filename, PSOManager* psos, Shaders* shaders, TextureManager* tex_man = nullptr)
 	{
 		GEMLoader::GEMModelLoader loader;
@@ -83,6 +85,15 @@ public:
 				STATIC_VERTEX v;
 				memcpy(&v, &gemmeshes[i].verticesStatic[j], sizeof(STATIC_VERTEX));
 				vertices.push_back(v);
+
+				for (int k = 0; k < 3; k++) {
+					if (v.pos.coords[k] < min_point.coords[k]) {
+						min_point.coords[k] = v.pos.coords[k];
+					}
+					if (v.pos.coords[k] > max_point.coords[k]) {
+						max_point.coords[k] = v.pos.coords[k];
+					}
+				}
 			}
 			textureFilenames.push_back(gemmeshes[i].material.find("albedo").getValue());
 			mesh->init(core, vertices, gemmeshes[i].indices);
