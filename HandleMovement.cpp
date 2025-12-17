@@ -6,7 +6,22 @@ HandleMovement::HandleMovement(Window& window) {
 }
 
 Matrix HandleMovement::getView(Window& window, float dt) {
-	Vec3 from = Vec3(0, 1, 15);
+	// Change whether player has free movement
+	if (window.keys['G']) {
+		if (free_movement && !is_free_movement_key_pressed) {
+			free_movement = false;
+			current_position = default_position;
+		}
+		else if (!is_free_movement_key_pressed) {
+			free_movement = true;
+		}
+		is_free_movement_key_pressed = true;
+	}
+	else {
+		is_free_movement_key_pressed = false;
+	}
+
+	// Rotate camera
 	mouse_rotation_x -= (window.getMouseInWindowX() - default_mouse_x) / mouse_speed_x;
 	mouse_rotation_y -= (window.getMouseInWindowY() - default_mouse_y) / mouse_speed_y;
 	while (mouse_rotation_x < 0.0f) { mouse_rotation_x += 2 * M_PI; }
@@ -17,6 +32,7 @@ Matrix HandleMovement::getView(Window& window, float dt) {
 	if (GetFocus()) {
 		SetCursorPos(1536 / 2, 960 / 2);
 	}
+	// Lean Camera left and right
 	Vec3 up = Vec3(0, 1, 0);
 	Vec3 cross = Cross(up, to).normalize();
 	if (window.keys['A']) {
@@ -39,6 +55,16 @@ Matrix HandleMovement::getView(Window& window, float dt) {
 		}
 	}
 	up += cross * 0.2 * lean;
+
+	if (free_movement) {
+		if (window.keys['W']) {
+			current_position += to * dt * movement_speed;
+		} 
+		else if (window.keys['S']) {
+			current_position -= to * dt * movement_speed;
+		}
+	}
+	Vec3 from = current_position;
 	from += cross * lean;
 	return Matrix::lookAt(from, from + to, up);
 }

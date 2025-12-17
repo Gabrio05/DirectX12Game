@@ -10,6 +10,11 @@ struct PS_INPUT
 float4 PS(PS_INPUT input) : SV_Target0
 {
  float4 colour = tex.Sample(samplerLinear, input.TexCoords);
- colour = min(sqrt(colour), 1.0);
- return float4(colour.rgb, 1.0);
+ if (colour.a < 0.5) {
+  discard;
+ }
+ float3 incoming_light = normalize(float3(-1.0, 1.0, -1.0));
+ colour = float4((colour / 3.14159265).xyz * 10 * (max(dot(incoming_light, input.Normal), 0) + 0.0), colour.a);
+ colour.rgb = min(sqrt(colour.rgb), 1.0);
+ return colour;
 }
