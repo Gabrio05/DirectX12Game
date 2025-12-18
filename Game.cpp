@@ -118,7 +118,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	for (int i = 0; i < 100; i++) {
 		Matrix inst{};
 		inst = inst.translation(Vec3(i * 3, 1, 0));
-		instanceMatrices.push_back(inst);
+		Matrix mult = Matrix::scaling(Vec3(10, 10, 10));
+		instanceMatrices.push_back(mult * inst);
 	}
 	instance_manager.instanceModelLoad("Models/Takeout_Food_01a.gem", Vec3(10, 10, 10), Vec3(), true, {}, instanceMatrices);
 	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Takeout_Food_01a_ALB.png");
