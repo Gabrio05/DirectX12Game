@@ -81,27 +81,7 @@ public:
 			shaders->updateTexturePS(core, "StaticModelTextured", "tex", texture_manager->find("Models/Textures/qwantani_moon_noon_puresky.jpg"));
 		}
 		mesh.draw(core);
-
-		/*shaders->updateConstantVS("StaticModelTextured", "staticMeshBuffer", "VP", &vp);
-		shaders->apply(core, "StaticModelTextured");
-		psos->bind(core, "StaticModelPSO");
-		for (int i = 0; i < meshes.size(); i++)
-		{
-			if (texture_manager) {
-				shaders->updateTexturePS(core, "StaticModelTextured", "tex", texture_manager->find(textureFilenames[i]));
-			}
-			meshes[i]->draw(core);
-		}*/
 	}
-	/*void draw(Core* core, PSOManager* psos, Shaders* shaders)
-	{
-		if (texture_manager) {
-			shaders->updateTexturePS(core, "Sphere", "tex", texture_manager->find("Models/Textures/rogland_clear_night.jpg"));
-		}
-		shaders->apply(core, shaderName);
-		psos->bind(core, "SpherePSO");
-		mesh.draw(core);
-	}*/
 };
 
 class Plane
@@ -165,9 +145,10 @@ public:
 	std::vector<Mesh*> meshes;
 	std::vector<std::string> textureFilenames;
 	TextureManager* texture_manager;
+	bool is_instanced = false;
 	Vec3 min_point{ INFINITY, INFINITY, INFINITY };
 	Vec3 max_point{ -INFINITY, -INFINITY, -INFINITY };
-	void load(Core* core, std::string filename, PSOManager* psos, Shaders* shaders, TextureManager* tex_man = nullptr)
+	void load(Core* core, std::string filename, PSOManager* psos, Shaders* shaders, TextureManager* tex_man = nullptr, std::vector<Matrix> matrices = {})
 	{
 		GEMLoader::GEMModelLoader loader;
 		std::vector<GEMLoader::GEMMesh> gemmeshes;
@@ -192,9 +173,21 @@ public:
 				}
 			}
 			textureFilenames.push_back(gemmeshes[i].material.find("albedo").getValue());
-			//textureFilenames.push_back(gemmeshes[i].material.find("normal").getValue());  Why is this not necessary?
-			mesh->init(core, vertices, gemmeshes[i].indices);
+			//textureFilenames.push_back(gemmeshes[i].material.find("normal").getValue());
+			if (matrices.size() == 0) {
+				mesh->init(core, vertices, gemmeshes[i].indices);
+			}
+			else {
+				mesh->init(core, vertices, gemmeshes[i].indices, matrices);
+			}
 			meshes.push_back(mesh);
+		}
+		if (matrices.size() != 0) {
+			shaders->load(core, "StaticModelInstanced", "VSInstancing.txt", "PS.txt");
+			psos->createPSO(core, "StaticModelInstancedPSO", shaders->find("StaticModelInstanced")->vs, shaders->find("StaticModelInstanced")->ps, VertexLayoutCache::getInstancedLayout());
+			texture_manager = tex_man;
+			is_instanced = true;
+			return;
 		}
 		if (true) {
 			shaders->load(core, "StaticModelTextured", "VS.txt", "PS.txt");
@@ -211,15 +204,31 @@ public:
 	}
 	void draw(Core* core, PSOManager* psos, Shaders* shaders, Matrix& vp)
 	{
-		shaders->updateConstantVS("StaticModelTextured", "staticMeshBuffer", "VP", &vp);
-		shaders->apply(core, "StaticModelTextured");
-		psos->bind(core, "StaticModelPSO");
-		for (int i = 0; i < meshes.size(); i++)
-		{
-			if (texture_manager) {
-				shaders->updateTexturePS(core, "StaticModelTextured", "tex", texture_manager->find(textureFilenames[i]));
+		if (is_instanced) {
+			shaders->updateConstantVS("StaticModelInstanced", "staticMeshBuffer", "VP", &vp);
+			Matrix W{};
+			shaders->updateConstantVS("StaticModelInstanced", "staticMeshBuffer", "W", &W);
+			shaders->apply(core, "StaticModelInstanced");
+			psos->bind(core, "StaticModelInstancedPSO");
+			for (int i = 0; i < meshes.size(); i++)
+			{
+				if (texture_manager) {
+					shaders->updateTexturePS(core, "StaticModelInstanced", "tex", texture_manager->find(textureFilenames[i]));
+				}
+				meshes[i]->draw(core);
 			}
-			meshes[i]->draw(core);
+		}
+		else {
+			shaders->updateConstantVS("StaticModelTextured", "staticMeshBuffer", "VP", &vp);
+			shaders->apply(core, "StaticModelTextured");
+			psos->bind(core, "StaticModelPSO");
+			for (int i = 0; i < meshes.size(); i++)
+			{
+				if (texture_manager) {
+					shaders->updateTexturePS(core, "StaticModelTextured", "tex", texture_manager->find(textureFilenames[i]));
+				}
+				meshes[i]->draw(core);
+			}
 		}
 	}
 };

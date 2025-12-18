@@ -47,6 +47,11 @@ public:
 		animatedInstance.init(&animated_models.back()->animation, 0);
 		animated_instances.push_back(animatedInstance);
 	}
+
+	void instanceModelLoad(Core* core, std::string filename, PSOManager* psos, Shaders* shaders, TextureManager* tex_man = nullptr, std::vector<Matrix> matrices = {}) {
+		static_models.push_back(std::make_unique<StaticModel>());
+		static_models.back()->load(core, filename, psos, shaders, tex_man, matrices);
+	}
 };
 
 inline Quaternion MakeRotationQuaternion(Vec3 axis, float angle)
@@ -98,6 +103,12 @@ public:
 		model_manager.animatedModelLoad(core, filename, psos, shaders, tex_man, tex_filename);
 		animated_world_matrix = world;
 	}
+	void instanceModelLoad(std::string filename, Vec3 scale, Vec3 offset, bool has_textures = false, Quaternion rotation = {}, std::vector<Matrix> matrices = {}) {
+		model_manager.instanceModelLoad(core, filename, psos, shaders, tex_man, matrices);
+		static_scaling_vectors.push_back(scale);
+		static_offset_vectors.push_back(offset);
+		static_rotation_quaternions.push_back(rotation);
+	}
 
 	void sphereDraw(float time) {
 		StaticModel* the_static_model = model_manager.static_models.at(1).get();
@@ -121,5 +132,8 @@ public:
 	}
 	void animatedModelDraw() {
 		model_manager.animated_models.at(0)->draw(core, psos, shaders, &model_manager.animated_instances.at(0), view_perspective_matrix, animated_world_matrix);
+	}
+	void instanceModelDraw(int i) {
+		model_manager.static_models.at(i)->draw(core, psos, shaders, view_perspective_matrix);
 	}
 };

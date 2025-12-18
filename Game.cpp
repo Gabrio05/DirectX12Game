@@ -114,6 +114,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	instance_manager.sphereInit(200, 500, 1000, &texture_manager);
 	instance_manager.model_manager.sphereTextureLoad(&core, "Models/Textures/qwantani_moon_noon_puresky.jpg");
 	instance_manager.model_manager.sphereTextureLoad(&core, "Models/Textures/black-image-8192x4096-rectangle.png");
+	std::vector<Matrix> instanceMatrices{};
+	for (int i = 0; i < 100; i++) {
+		Matrix inst{};
+		inst = inst.translation(Vec3(i * 3, 1, 0));
+		instanceMatrices.push_back(inst);
+	}
+	instance_manager.instanceModelLoad("Models/Takeout_Food_01a.gem", Vec3(10, 10, 10), Vec3(), true, {}, instanceMatrices);
+	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Takeout_Food_01a_ALB.png");
 
 	ObjectThrowing vase_manager{};
 	int thrown_vases = 0;
@@ -158,6 +166,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		instance_manager.animated_world_matrix = Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f));
 		instance_manager.animatedModelDraw();
 		instance_manager.sphereDraw(t);
+		instance_manager.instanceModelDraw(3);
 
 		core.finishFrame();
 	}
