@@ -8,6 +8,102 @@
 #include "TextureData.h"
 
 
+class Sphere {
+public:
+	Mesh mesh;
+	std::string shaderName;
+	TextureManager* texture_manager;
+	STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv)
+	{
+		STATIC_VERTEX v;
+		v.pos = p;
+		v.normal = n;
+		Frame frame;
+		frame.fromVector(n);
+		v.tangent = frame.u;
+		v.tu = tu;
+		v.tv = tv;
+		return v;
+	}
+	int rings;
+	int segments;
+	float radius;
+	void init(Core* core, PSOManager* psos, Shaders* shaders, int rings, int segments, float radius, TextureManager* tex_man = nullptr) {
+		std::vector<STATIC_VERTEX> vertices;
+		for (int lat = 0; lat <= rings; lat++) {
+			float theta = lat * M_PI / rings;
+			float sinTheta = sinf(theta);
+			float cosTheta = cosf(theta);
+			for (int lon = 0; lon <= segments; lon++) {
+				float phi = lon * 2.0f * M_PI / segments;
+				float sinPhi = sinf(phi);
+				float cosPhi = cosf(phi);
+				Vec3 position(radius * sinTheta * cosPhi, radius * cosTheta,
+					radius * sinTheta * sinPhi);
+				Vec3 normal = position.normalize();
+				float tu = 1.0f - (float)lon / segments;
+				float tv = 1.0f - (float)lat / rings;
+				vertices.push_back(addVertex(position, normal, tu, tv));
+			}
+		}
+		std::vector<unsigned int> indices;
+		for (int lat = 0; lat < rings; lat++)
+		{
+			for (int lon = 0; lon < segments; lon++)
+			{
+				int current = lat * (segments + 1) + lon;
+				int next = current + segments + 1;
+				indices.push_back(current);
+				indices.push_back(next);
+				indices.push_back(current + 1);
+				indices.push_back(current + 1);
+				indices.push_back(next);
+				indices.push_back(next + 1);
+			}
+		}
+		mesh.init(core, vertices, indices);
+		if (true) {
+			shaders->load(core, "StaticModelTextured", "VS.txt", "PS.txt");
+		}
+		else {
+			shaders->load(core, "StaticModelTextured", "VS.txt", "PSUntextured.txt");
+		}
+		texture_manager = tex_man;
+		shaderName = "StaticModelTextured";
+		psos->createPSO(core, "StaticModelTexturedPSO", shaders->find("StaticModelTextured")->vs, shaders->find("StaticModelTextured")->ps, VertexLayoutCache::getStaticLayout());
+	}
+	void draw(Core* core, PSOManager* psos, Shaders* shaders, Matrix& vp)
+	{
+		shaders->updateConstantVS("StaticModelTextured", "staticMeshBuffer", "VP", &vp);
+		shaders->apply(core, shaderName);
+		psos->bind(core, "StaticModelTexturedPSO");
+		if (texture_manager) {
+			shaders->updateTexturePS(core, "StaticModelTextured", "tex", texture_manager->find("Models/Textures/qwantani_moon_noon_puresky.jpg"));
+		}
+		mesh.draw(core);
+
+		/*shaders->updateConstantVS("StaticModelTextured", "staticMeshBuffer", "VP", &vp);
+		shaders->apply(core, "StaticModelTextured");
+		psos->bind(core, "StaticModelPSO");
+		for (int i = 0; i < meshes.size(); i++)
+		{
+			if (texture_manager) {
+				shaders->updateTexturePS(core, "StaticModelTextured", "tex", texture_manager->find(textureFilenames[i]));
+			}
+			meshes[i]->draw(core);
+		}*/
+	}
+	/*void draw(Core* core, PSOManager* psos, Shaders* shaders)
+	{
+		if (texture_manager) {
+			shaders->updateTexturePS(core, "Sphere", "tex", texture_manager->find("Models/Textures/rogland_clear_night.jpg"));
+		}
+		shaders->apply(core, shaderName);
+		psos->bind(core, "SpherePSO");
+		mesh.draw(core);
+	}*/
+};
+
 class Plane
 {
 public:
@@ -100,7 +196,12 @@ public:
 			mesh->init(core, vertices, gemmeshes[i].indices);
 			meshes.push_back(mesh);
 		}
-		shaders->load(core, "StaticModelTextured", "VS.txt", "PS.txt");
+		if (true) {
+			shaders->load(core, "StaticModelTextured", "VS.txt", "PS.txt");
+		}
+		else {
+			shaders->load(core, "StaticModelTextured", "VS.txt", "PSUntextured.txt");
+		}
 		psos->createPSO(core, "StaticModelPSO", shaders->find("StaticModelTextured")->vs, shaders->find("StaticModelTextured")->ps, VertexLayoutCache::getStaticLayout());
 		texture_manager = tex_man;
 	}
@@ -150,7 +251,7 @@ public:
 			mesh->init(core, vertices, gemmeshes[i].indices);
 			meshes.push_back(mesh);
 		}
-		shaders->load(core, "AnimatedUntextured", "VSAnim.txt", "PS.txt");
+		shaders->load(core, "AnimatedUntextured", "VSAnim.txt", "PSAbnormal.txt");
 		psos->createPSO(core, "AnimatedModelPSO", shaders->find("AnimatedUntextured")->vs, shaders->find("AnimatedUntextured")->ps, VertexLayoutCache::getAnimatedLayout());
 		memcpy(&animation.skeleton.globalInverse, &gemanimation.globalInverse, 16 * sizeof(float));
 		for (int i = 0; i < gemanimation.bones.size(); i++)

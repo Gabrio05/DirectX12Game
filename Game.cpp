@@ -25,19 +25,6 @@ Vec3 interpolate(Vec3 p1, Vec3 p2, float t)
 	return ((p1 * (1.0f - t)) + (p2 * t));
 }
 
-Quaternion MakeRotationQuaternion(Vec3 axis, float angle)
-{
-	axis.normalize();
-	float half = 0.5f * angle;
-	float s = sinf(half);
-	Quaternion q;
-	q.a = axis.x * s;
-	q.b = axis.y * s;
-	q.c = axis.z * s;
-	q.d = cosf(half);
-	return q;
-}
-
 class rotationHolder {
 public:
 	inline static const float rotation_time = 2.0f;
@@ -124,6 +111,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Vase_Set_66a_ALB.png");
 	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Vase_Set_66a_NH.png");
 	instance_manager.animatedModelLoad("Models/TRex.gem", "Models/Textures/T-rex_Base_Color_alb.png", Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f)));
+	instance_manager.sphereInit(200, 500, 1000, &texture_manager);
+	instance_manager.model_manager.sphereTextureLoad(&core, "Models/Textures/qwantani_moon_noon_puresky.jpg");
+	instance_manager.model_manager.sphereTextureLoad(&core, "Models/Textures/black-image-8192x4096-rectangle.png");
 
 	ObjectThrowing vase_manager{};
 	int thrown_vases = 0;
@@ -167,6 +157,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		updateAnimation(&instance_manager.model_manager.animated_instances.at(0), "roar", dt);
 		instance_manager.animated_world_matrix = Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f));
 		instance_manager.animatedModelDraw();
+		instance_manager.sphereDraw(t);
 
 		core.finishFrame();
 	}

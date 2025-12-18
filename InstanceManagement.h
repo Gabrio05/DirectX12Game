@@ -10,10 +10,19 @@ class TextureManager;
 
 class ModelManager {
 public:
+	std::vector<std::unique_ptr<Sphere>> spheres{};
 	std::vector<std::unique_ptr<Plane>> planes{};
 	std::vector<std::unique_ptr<StaticModel>> static_models{};
 	std::vector<std::unique_ptr<AnimatedModel>> animated_models{};
 	std::vector<AnimationInstance> animated_instances{};
+
+	void sphereInit(Core* core, PSOManager* psos, Shaders* shaders, int rings, int segments, float radius, TextureManager* tex_man = nullptr) {
+		spheres.push_back(std::make_unique<Sphere>());
+		spheres.back()->init(core, psos, shaders, rings, segments, radius, tex_man);
+	}
+	void sphereTextureLoad(Core* core, std::string tex_filename) {
+		spheres.back()->texture_manager->load(core, tex_filename);
+	}
 
 	void planeInit(Core* core, PSOManager* psos, Shaders* shaders) {
 		planes.push_back(std::make_unique<Plane>());
@@ -40,6 +49,19 @@ public:
 	}
 };
 
+inline Quaternion MakeRotationQuaternion(Vec3 axis, float angle)
+{
+	axis.normalize();
+	float half = 0.5f * angle;
+	float s = sinf(half);
+	Quaternion q;
+	q.a = axis.x * s;
+	q.b = axis.y * s;
+	q.c = axis.z * s;
+	q.d = cosf(half);
+	return q;
+}
+
 class InstanceManager {
 public:
 	ModelManager model_manager{};
@@ -55,6 +77,9 @@ public:
 
 	InstanceManager(Core* _core, PSOManager* _psos, Shaders* _shaders, TextureManager* _tex_man) : 
 		core{ _core }, psos{ _psos }, shaders{ _shaders }, tex_man{ _tex_man } {}
+	void sphereInit(int rings, int segments, float radius, TextureManager* tex_man = nullptr) {
+		model_manager.sphereInit(core, psos, shaders, rings, segments, radius, tex_man);
+	}
 	void planeInit() {
 		model_manager.planeInit(core, psos, shaders);
 	}
@@ -74,6 +99,15 @@ public:
 		animated_world_matrix = world;
 	}
 
+	void sphereDraw(float time) {
+		StaticModel* the_static_model = model_manager.static_models.at(1).get();
+		Matrix W;
+		W = W.scaling(Vec3(-1, -1, -1));
+		W = Matrix::translation(Vec3(0, 0, 0)) * MakeRotationQuaternion(Vec3(0, 1, 0), time).toMatrix() * Matrix::translation(Vec3(0, 0, 0))
+			* Matrix::scaling(Vec3(-1, -1, -1)) * Matrix::translation(Vec3(0, 0, 0));
+		the_static_model->updateWorld(shaders, W);
+		model_manager.spheres[0]->draw(core, psos, shaders, view_perspective_matrix);
+	}
 	void planeDraw() {
 		model_manager.planes[0]->draw(core, psos, shaders, view_perspective_matrix);
 	}
