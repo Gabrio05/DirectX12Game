@@ -79,6 +79,8 @@ public:
 	Shaders* shaders;
 	TextureManager* tex_man;
 	Matrix view_perspective_matrix{};
+	std::vector<std::vector<Vec3>> cpu_instances_offset_vectors{};
+	std::vector<bool> is_gpu_instanced{};
 
 	InstanceManager(Core* _core, PSOManager* _psos, Shaders* _shaders, TextureManager* _tex_man) : 
 		core{ _core }, psos{ _psos }, shaders{ _shaders }, tex_man{ _tex_man } {}
@@ -98,6 +100,11 @@ public:
 		static_scaling_vectors.push_back(scale);
 		static_offset_vectors.push_back(offset);
 		static_rotation_quaternions.push_back(rotation);
+		cpu_instances_offset_vectors.push_back({ offset });
+		is_gpu_instanced.push_back(false);
+	}
+	void addStaticCPUInstance(Vec3 offset) {
+		cpu_instances_offset_vectors.back().push_back(offset);
 	}
 	void animatedModelLoad(std::string filename, std::string tex_filename, Matrix world) {
 		model_manager.animatedModelLoad(core, filename, psos, shaders, tex_man, tex_filename);
@@ -108,6 +115,8 @@ public:
 		static_scaling_vectors.push_back(scale);
 		static_offset_vectors.push_back(offset);
 		static_rotation_quaternions.push_back(rotation);
+		cpu_instances_offset_vectors.push_back({ offset });
+		is_gpu_instanced.push_back(true);
 	}
 
 	void sphereDraw(float time) {
@@ -120,7 +129,9 @@ public:
 		model_manager.spheres[0]->draw(core, psos, shaders, view_perspective_matrix);
 	}
 	void planeDraw() {
-		model_manager.planes[0]->draw(core, psos, shaders, view_perspective_matrix);
+		for (int i = 0; i < model_manager.planes.size(); i++) {
+			model_manager.planes[i]->draw(core, psos, shaders, view_perspective_matrix);
+		}
 	}
 	void staticModelDraw(int i) {
 		StaticModel* the_static_model = model_manager.static_models.at(i).get();
@@ -135,5 +146,28 @@ public:
 	}
 	void instanceModelDraw(int i) {
 		model_manager.static_models.at(i)->draw(core, psos, shaders, view_perspective_matrix);
+	}
+	void drawAll(float t) {
+		planeDraw();
+
+		// i = 0 is the thrown object and handled separatly to drawAll
+		for (int i = 1; i < model_manager.static_models.size(); i++) {
+			if (is_gpu_instanced.at(i)) {
+				instanceModelDraw(i);
+			}
+			else if (cpu_instances_offset_vectors.at(i).size() == 1) {
+				staticModelDraw(i);
+			}
+			else {
+				for (int j = 0; j < cpu_instances_offset_vectors.at(i).size(); j++) {
+					static_offset_vectors.at(i) = cpu_instances_offset_vectors.at(i).at(j);
+					staticModelDraw(i);
+				}
+			}
+		}
+		
+		animated_world_matrix = Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f));
+		animatedModelDraw();
+		sphereDraw(t);
 	}
 };

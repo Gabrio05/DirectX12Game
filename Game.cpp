@@ -71,7 +71,7 @@ public:
 
 	void updateThrownObjects(InstanceManager* manager, float dt) {
 		for (ThrownObject& object : thrown_objects) {
-			const int vase_index = 2;
+			const int vase_index = 0;
 			Vec3 target = target_position + object.target_offset;
 			Vec3 end = (target - object.starting_position) * 2 + object.starting_position;
 			manager->static_offset_vectors.at(vase_index) = interpolate(object.starting_position, end, (object.current_time + dt) / object.time_to_player / 2);
@@ -81,6 +81,148 @@ public:
 		std::erase_if(thrown_objects, [](ThrownObject object) { return object.shouldDespawn(); });
 	}
 };
+
+int readIntNumber(std::string the_string) {
+	int number = 0;
+	bool negative = false;
+	for (const char& c : the_string) {
+		if (c == ',') {
+			break;
+		}
+		else if (c == '-') {
+			negative = true;
+		}
+		else {
+			number *= 10;
+			number += c - '0';
+		}
+	}
+	if (negative) {
+		return -number;
+	}
+	return number;
+}
+
+float readNumber(std::string the_string) {
+	int whole_part = 0;
+	bool negative = false;
+	int decimal_part = 0;
+	bool on_decimals = false;
+	int decimal_digits = 0;
+	bool exponential = false;
+	bool negative_exponent = false;
+	int exponent = 0;
+	for (const char& c : the_string) {
+		if (c == ',') {
+			break;
+		}
+		else if (c == '.') {
+			on_decimals = true;
+		}
+		else if (c == 'e') {
+			exponential = true;
+		}
+		else if (c == '-') {
+			if (exponential) {
+				negative_exponent = true;
+			}
+			else {
+				negative = true;
+			}
+		}
+		else {
+			if (!on_decimals) {
+				whole_part *= 10;
+				whole_part += c - '0';
+			}
+			else if (!exponential) {
+				decimal_part *= 10;
+				decimal_part += c - '0';
+				decimal_digits++;
+			}
+			else {
+				exponent *= 10;
+				exponent += c - '0';
+			}
+		}
+	}
+	float number = whole_part + decimal_part / pow(10, decimal_digits);
+	if (exponential) {
+		if (negative_exponent) {
+			exponent = -exponent;
+		}
+		number = number * pow(10, exponent);
+	}
+	if (negative) {
+		return -number;
+	}
+	return number;
+}
+
+std::string getNextString(std::ifstream* file) {
+	std::string to_return = "";
+	char c = file->get();
+	while (!file->eof() && c != ',' && c != '\n') {
+		to_return += c;
+		c = file->get();
+	}
+	return to_return;
+}
+
+void loadAllLevel(Core* core, TextureManager* tex_man, InstanceManager* instance_manager, std::string dataFilename) {
+	std::ifstream file;
+	file.open(dataFilename);
+	while (!file.eof()) {
+		std::vector<std::string> next_command{};
+		while (!file.eof() && (next_command.size() == 0 || next_command.back() != "")) {
+			next_command.push_back(getNextString(&file));
+		}
+		if (next_command.at(0) == "plane") {
+			instance_manager->planeInit();
+		}
+		else if (next_command.at(0) == "static") {
+			bool has_textures = false;
+			if (next_command.size() > 8 && next_command.at(8)[0] == 'M') {
+				has_textures = true;
+			}
+			instance_manager->staticModelLoad(next_command.at(1),
+				Vec3(readNumber(next_command.at(2)), readNumber(next_command.at(3)), readNumber(next_command.at(4))),
+				Vec3(readNumber(next_command.at(5)), readNumber(next_command.at(6)), readNumber(next_command.at(7))),
+				has_textures);
+			int i = 8;
+			while (next_command.size() > i && next_command.at(i)[0] == 'M') {
+				instance_manager->model_manager.staticModelTextureLoad(core, next_command.at(i));
+				i++;
+			}
+		}
+		else if (next_command.at(0) == "staticRepeat") {
+			instance_manager->addStaticCPUInstance(Vec3(readNumber(next_command.at(1)), readNumber(next_command.at(2)), readNumber(next_command.at(3))));
+		}
+		else if (next_command.at(0) == "animated") {
+			instance_manager->animatedModelLoad("Models/TRex.gem", "Models/Textures/T-rex_Base_Color_alb.png", Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f)));
+		}
+		else if (next_command.at(0) == "sphere") {
+			instance_manager->sphereInit(readNumber(next_command.at(1)), readNumber(next_command.at(2)), readNumber(next_command.at(3)), tex_man);
+			int i = 4;
+			while (next_command.size() > i && next_command.at(i)[0] == 'M') {
+				instance_manager->model_manager.staticModelTextureLoad(core, next_command.at(i));
+				i++;
+			}
+		}
+		else if (next_command.at(0) == "instance") {
+			std::vector<Matrix> instanceMatrices{};
+			for (int i = 0; i < 100; i++) {
+				Matrix inst{};
+				inst = inst.translation(Vec3(i * 3, 1, 0));
+				Matrix mult = Matrix::scaling(Vec3(10, 10, 10));
+				instanceMatrices.push_back(mult * inst);
+			}
+			instance_manager->instanceModelLoad("Models/Takeout_Food_01a.gem", Vec3(10, 10, 10), Vec3(), true, {}, instanceMatrices);
+			instance_manager->model_manager.staticModelTextureLoad(core, "Models/Textures/TX_Takeout_Food_01a_ALB.png");
+		}
+	}
+	file.close();
+}
 
 #define WIDTH 1280.0f
 #define HEIGHT 720.0f
@@ -102,27 +244,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	TextureManager texture_manager;
 
 	InstanceManager instance_manager{ &core, &psos, &shaders, &texture_manager };
-	instance_manager.planeInit();
-	instance_manager.staticModelLoad("Models/acacia_003.gem", Vec3(0.01f, 0.01f, 0.01f), Vec3(5, 0, 0));
-	instance_manager.staticModelLoad("Models/Scraggly_Bush_01a.gem", Vec3(2.0f, 2.0f, 2.0f), Vec3(0, 0, 18), true);
-	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Scraggly_Bushes_01a_ALB.png");
-	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Scraggly_Bushes_01a_NH.png");
-	instance_manager.staticModelLoad("Models/Vase_Set_66a.gem", Vec3(10.0f, 10.0f, 10.0f), Vec3(-1, 0, 5), true);
-	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Vase_Set_66a_ALB.png");
-	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Vase_Set_66a_NH.png");
-	instance_manager.animatedModelLoad("Models/TRex.gem", "Models/Textures/T-rex_Base_Color_alb.png", Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f)));
-	instance_manager.sphereInit(200, 500, 1000, &texture_manager);
-	instance_manager.model_manager.sphereTextureLoad(&core, "Models/Textures/qwantani_moon_noon_puresky.jpg");
-	instance_manager.model_manager.sphereTextureLoad(&core, "Models/Textures/black-image-8192x4096-rectangle.png");
-	std::vector<Matrix> instanceMatrices{};
-	for (int i = 0; i < 100; i++) {
-		Matrix inst{};
-		inst = inst.translation(Vec3(i * 3, 1, 0));
-		Matrix mult = Matrix::scaling(Vec3(10, 10, 10));
-		instanceMatrices.push_back(mult * inst);
-	}
-	instance_manager.instanceModelLoad("Models/Takeout_Food_01a.gem", Vec3(10, 10, 10), Vec3(), true, {}, instanceMatrices);
-	instance_manager.model_manager.staticModelTextureLoad(&core, "Models/Textures/TX_Takeout_Food_01a_ALB.png");
+	loadAllLevel(&core, &texture_manager, &instance_manager, "levelData.txt");
 
 	ObjectThrowing vase_manager{};
 	int thrown_vases = 0;
@@ -150,13 +272,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		//shaders.updateConstantVS("StaticModelTextured", "staticMeshBuffer", "VP", &vp);
 		core.beginRenderPass();
 
-		instance_manager.planeDraw();
-
-		instance_manager.static_offset_vectors.at(0) = Vec3(5, 0, 0);
-		instance_manager.staticModelDraw(0);
-		instance_manager.static_offset_vectors.at(0) = Vec3(10, 0, 0);
-		instance_manager.staticModelDraw(0);
-		instance_manager.staticModelDraw(1);
 		if (t > thrown_vases * 5.0f) {
 			vase_manager.throwVase(Vec3(0, 0, 0), 4, Vec3(thrown_vases, 0, 0));
 			thrown_vases++;
@@ -164,10 +279,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		vase_manager.updateThrownObjects(&instance_manager, dt);
 
 		updateAnimation(&instance_manager.model_manager.animated_instances.at(0), "roar", dt);
-		instance_manager.animated_world_matrix = Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f));
-		instance_manager.animatedModelDraw();
-		instance_manager.sphereDraw(t);
-		instance_manager.instanceModelDraw(3);
+
+		instance_manager.drawAll(t);
 
 		core.finishFrame();
 	}
