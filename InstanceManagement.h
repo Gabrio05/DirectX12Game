@@ -81,6 +81,7 @@ public:
 	Matrix view_perspective_matrix{};
 	std::vector<std::vector<Vec3>> cpu_instances_offset_vectors{};
 	std::vector<bool> is_gpu_instanced{};
+	bool has_gpu_instanced = false;  // This is to apply the vertex shader to the grass
 
 	InstanceManager(Core* _core, PSOManager* _psos, Shaders* _shaders, TextureManager* _tex_man) : 
 		core{ _core }, psos{ _psos }, shaders{ _shaders }, tex_man{ _tex_man } {}
@@ -148,8 +149,6 @@ public:
 		model_manager.static_models.at(i)->draw(core, psos, shaders, view_perspective_matrix);
 	}
 	void drawAll(float t) {
-		planeDraw();
-
 		// i = 0 is the thrown object and handled separatly to drawAll
 		for (int i = 1; i < model_manager.static_models.size(); i++) {
 			if (is_gpu_instanced.at(i)) {
@@ -168,6 +167,7 @@ public:
 		
 		animated_world_matrix = Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f));
 		animatedModelDraw();
+		planeDraw();
 		sphereDraw(t);
 	}
 };

@@ -9,6 +9,7 @@
 #include "TextureData.h"
 #include "HandleMovement.h"
 #include "InstanceManagement.h"
+#include <random>
 // Properties -> Linker -> System -> Windows
 #include <d3dcompiler.h>
 #pragma comment(lib, "d3dcompiler.lib")
@@ -210,15 +211,53 @@ void loadAllLevel(Core* core, TextureManager* tex_man, InstanceManager* instance
 			}
 		}
 		else if (next_command.at(0) == "instance") {
-			std::vector<Matrix> instanceMatrices{};
-			for (int i = 0; i < 100; i++) {
-				Matrix inst{};
-				inst = inst.translation(Vec3(i * 3, 1, 0));
-				Matrix mult = Matrix::scaling(Vec3(10, 10, 10));
-				instanceMatrices.push_back(mult * inst);
+			if (next_command.at(1) == "line") {
+				std::vector<Matrix> instanceMatrices{};
+				int instanceNumber = readIntNumber(next_command.at(2));
+				Vec3 offset = Vec3(readNumber(next_command.at(6)), readNumber(next_command.at(7)), readNumber(next_command.at(8)));
+				Vec3 multiply = Vec3(readNumber(next_command.at(3)), readNumber(next_command.at(4)), readNumber(next_command.at(5)));
+				Vec3 scale = Vec3(readNumber(next_command.at(9)), readNumber(next_command.at(10)), readNumber(next_command.at(11)));
+				for (int i = 0; i < instanceNumber; i++) {
+					Matrix inst{};
+					inst = inst.translation(multiply * i + offset);
+					Matrix mult = Matrix::scaling(scale);
+					instanceMatrices.push_back(mult * inst);
+				}
+				instance_manager->instanceModelLoad(next_command.at(12), {}, {}, true, {}, instanceMatrices);
+				int i = 13;
+				while (next_command.size() > i && next_command.at(i)[0] == 'M') {
+					instance_manager->model_manager.staticModelTextureLoad(core, next_command.at(i));
+					i++;
+				}
 			}
-			instance_manager->instanceModelLoad("Models/Takeout_Food_01a.gem", Vec3(10, 10, 10), Vec3(), true, {}, instanceMatrices);
-			instance_manager->model_manager.staticModelTextureLoad(core, "Models/Textures/TX_Takeout_Food_01a_ALB.png");
+			else if (next_command.at(1) == "grid") {
+				std::random_device rd;
+				std::uniform_real_distribution slight_offset{ 0.6, 1.4 };
+				std::uniform_real_distribution random_rotation{ 0.0, 360.0 };
+				std::unique_ptr<std::default_random_engine> engine = std::make_unique<std::default_random_engine>(rd());
+
+				std::vector<Matrix> instanceMatrices{};
+				int instanceNumber = readIntNumber(next_command.at(2));
+				Vec3 offset = Vec3(readNumber(next_command.at(3)), readNumber(next_command.at(4)), readNumber(next_command.at(5)));
+				Vec3 multiply_x = Vec3(readNumber(next_command.at(6)), readNumber(next_command.at(7)), readNumber(next_command.at(8)));
+				Vec3 multiply_y = Vec3(readNumber(next_command.at(9)), readNumber(next_command.at(10)), readNumber(next_command.at(11)));
+				Vec3 scale = Vec3(readNumber(next_command.at(12)), readNumber(next_command.at(13)), readNumber(next_command.at(14)));
+				for (int i = 0; i < sqrt(instanceNumber); i++) {
+					for (int j = 0; j < sqrt(instanceNumber); j++) {
+						Matrix inst{};
+						inst = inst.translation(multiply_x * i * slight_offset(*engine) + multiply_y * j * slight_offset(*engine) + offset);
+						Matrix mult = Matrix::scaling(scale);
+						instanceMatrices.push_back(mult * inst);
+					}
+				}
+				instance_manager->instanceModelLoad(next_command.at(15), {}, {}, true, {}, instanceMatrices);
+				int i = 16;
+				while (next_command.size() > i && next_command.at(i)[0] == 'M') {
+					instance_manager->model_manager.staticModelTextureLoad(core, next_command.at(i));
+					i++;
+				}
+			}
+			
 		}
 	}
 	file.close();
