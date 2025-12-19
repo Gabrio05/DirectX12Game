@@ -9,6 +9,7 @@
 #include "TextureData.h"
 #include "HandleMovement.h"
 #include "InstanceManagement.h"
+#include "Sound.h"
 #include <random>
 // Properties -> Linker -> System -> Windows
 #include <d3dcompiler.h>
@@ -286,6 +287,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
 	ObjectThrowing vase_manager{};
 	int thrown_vases = 0;
+
+	SoundManager sound_manager{};
+	sound_manager.loadMusic("Doghole.wav");
+	sound_manager.playMusic();
 
 	Timer timer;
 	float t = 0;
