@@ -233,7 +233,6 @@ void loadAllLevel(Core* core, TextureManager* tex_man, InstanceManager* instance
 			else if (next_command.at(1) == "grid") {
 				std::random_device rd;
 				std::uniform_real_distribution slight_offset{ 0.6, 1.4 };
-				std::uniform_real_distribution random_rotation{ 0.0, 360.0 };
 				std::unique_ptr<std::default_random_engine> engine = std::make_unique<std::default_random_engine>(rd());
 
 				std::vector<Matrix> instanceMatrices{};
@@ -275,7 +274,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		SetCursorPos(1536 / 2, 960 / 2);
 	}
 	HandleMovement movement_handler{ window };
-	
+
 	Core core;
 	core.init(window.hwnd, WIDTH, HEIGHT);
 	Shaders shaders;

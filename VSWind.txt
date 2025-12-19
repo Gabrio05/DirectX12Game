@@ -1,0 +1,44 @@
+cbuffer staticMeshBuffer : register(b0)
+{
+    float4x4 VP;
+    float TIME;
+};
+
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+    float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
+    float2 TexCoords : TEXCOORD;
+    float4x4 World : WORLD;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
+    float2 TexCoords : TEXCOORD;
+};
+
+PS_INPUT VS(VS_INPUT input)
+{
+    float3 windDirection = normalize(float3(1, 0, 0.3));
+    float windStrength = 2;
+    float windSpeed = 2;
+    float2 phaseVary = float2(0.125, 0.1);
+    
+    float4 worldPos = mul(input.Pos, input.World);
+    float phase = dot(worldPos, phaseVary);
+    float windFactor = sin(TIME * windSpeed + phase) + sin(TIME / 2 * windSpeed + phase * 2);
+    float3 windOffset = windDirection * windFactor * windStrength * input.Pos.y * input.Pos.y;
+    
+    worldPos.xyz += windOffset;
+
+    PS_INPUT output;
+    output.Pos = mul(worldPos, VP);
+    output.Normal = mul(input.Normal, input.World);
+    output.Tangent = mul(input.Tangent, input.World);
+    output.TexCoords = input.TexCoords;
+    return output;
+}

@@ -148,7 +148,7 @@ public:
 	bool is_instanced = false;
 	Vec3 min_point{ INFINITY, INFINITY, INFINITY };
 	Vec3 max_point{ -INFINITY, -INFINITY, -INFINITY };
-	void load(Core* core, std::string filename, PSOManager* psos, Shaders* shaders, TextureManager* tex_man = nullptr, std::vector<Matrix> matrices = {})
+	void load(Core* core, std::string filename, PSOManager* psos, Shaders* shaders, TextureManager* tex_man = nullptr, std::vector<Matrix> matrices = {}, bool first_gpu_instance = false)
 	{
 		GEMLoader::GEMModelLoader loader;
 		std::vector<GEMLoader::GEMMesh> gemmeshes;
@@ -183,18 +183,20 @@ public:
 			meshes.push_back(mesh);
 		}
 		if (matrices.size() != 0) {
+			if (first_gpu_instance) {
+				shaders->load(core, "Grass", "VSWind.txt", "PS.txt");
+				psos->createPSO(core, "GrassPSO", shaders->find("Grass")->vs, shaders->find("Grass")->ps, VertexLayoutCache::getInstancedLayout());
+				texture_manager = tex_man;
+				is_instanced = true;
+				return;
+			}
 			shaders->load(core, "StaticModelInstanced", "VSInstancing.txt", "PS.txt");
 			psos->createPSO(core, "StaticModelInstancedPSO", shaders->find("StaticModelInstanced")->vs, shaders->find("StaticModelInstanced")->ps, VertexLayoutCache::getInstancedLayout());
 			texture_manager = tex_man;
 			is_instanced = true;
 			return;
 		}
-		if (true) {
-			shaders->load(core, "StaticModelTextured", "VS.txt", "PS.txt");
-		}
-		else {
-			shaders->load(core, "StaticModelTextured", "VS.txt", "PSUntextured.txt");
-		}
+		shaders->load(core, "StaticModelTextured", "VS.txt", "PS.txt");
 		psos->createPSO(core, "StaticModelPSO", shaders->find("StaticModelTextured")->vs, shaders->find("StaticModelTextured")->ps, VertexLayoutCache::getStaticLayout());
 		texture_manager = tex_man;
 	}
@@ -202,9 +204,23 @@ public:
 	{
 		shaders->updateConstantVS("StaticModelTextured", "staticMeshBuffer", "W", &w);
 	}
-	void draw(Core* core, PSOManager* psos, Shaders* shaders, Matrix& vp)
+	void draw(Core* core, PSOManager* psos, Shaders* shaders, Matrix& vp, bool is_first_instanced = false)
 	{
-		if (is_instanced) {
+		if (is_instanced && is_first_instanced) {
+			shaders->updateConstantVS("Grass", "staticMeshBuffer", "VP", &vp);
+			Matrix W{};
+			shaders->updateConstantVS("Grass", "staticMeshBuffer", "W", &W);
+			shaders->apply(core, "Grass");
+			psos->bind(core, "GrassPSO");
+			for (int i = 0; i < meshes.size(); i++)
+			{
+				if (texture_manager) {
+					shaders->updateTexturePS(core, "Grass", "tex", texture_manager->find(textureFilenames[i]));
+				}
+				meshes[i]->draw(core);
+			}
+		}
+		else if (is_instanced) {
 			shaders->updateConstantVS("StaticModelInstanced", "staticMeshBuffer", "VP", &vp);
 			Matrix W{};
 			shaders->updateConstantVS("StaticModelInstanced", "staticMeshBuffer", "W", &W);

@@ -48,9 +48,9 @@ public:
 		animated_instances.push_back(animatedInstance);
 	}
 
-	void instanceModelLoad(Core* core, std::string filename, PSOManager* psos, Shaders* shaders, TextureManager* tex_man = nullptr, std::vector<Matrix> matrices = {}) {
+	void instanceModelLoad(Core* core, std::string filename, PSOManager* psos, Shaders* shaders, TextureManager* tex_man = nullptr, std::vector<Matrix> matrices = {}, bool first_gpu_instance = false) {
 		static_models.push_back(std::make_unique<StaticModel>());
-		static_models.back()->load(core, filename, psos, shaders, tex_man, matrices);
+		static_models.back()->load(core, filename, psos, shaders, tex_man, matrices, first_gpu_instance);
 	}
 };
 
@@ -112,12 +112,13 @@ public:
 		animated_world_matrix = world;
 	}
 	void instanceModelLoad(std::string filename, Vec3 scale, Vec3 offset, bool has_textures = false, Quaternion rotation = {}, std::vector<Matrix> matrices = {}) {
-		model_manager.instanceModelLoad(core, filename, psos, shaders, tex_man, matrices);
+		model_manager.instanceModelLoad(core, filename, psos, shaders, tex_man, matrices, !has_gpu_instanced);
 		static_scaling_vectors.push_back(scale);
 		static_offset_vectors.push_back(offset);
 		static_rotation_quaternions.push_back(rotation);
 		cpu_instances_offset_vectors.push_back({ offset });
 		is_gpu_instanced.push_back(true);
+		has_gpu_instanced = true;
 	}
 
 	void sphereDraw(float time) {
@@ -145,14 +146,17 @@ public:
 	void animatedModelDraw() {
 		model_manager.animated_models.at(0)->draw(core, psos, shaders, &model_manager.animated_instances.at(0), view_perspective_matrix, animated_world_matrix);
 	}
-	void instanceModelDraw(int i) {
-		model_manager.static_models.at(i)->draw(core, psos, shaders, view_perspective_matrix);
+	void instanceModelDraw(int i, bool first_gpu_instance_drawn = false) {
+		model_manager.static_models.at(i)->draw(core, psos, shaders, view_perspective_matrix, first_gpu_instance_drawn);
 	}
 	void drawAll(float t) {
 		// i = 0 is the thrown object and handled separatly to drawAll
+		bool first_gpu_instance_drawn = false;
+		shaders->updateConstantVS("Grass", "staticMeshBuffer", "TIME", &t);
 		for (int i = 1; i < model_manager.static_models.size(); i++) {
 			if (is_gpu_instanced.at(i)) {
-				instanceModelDraw(i);
+				instanceModelDraw(i, !first_gpu_instance_drawn);
+				first_gpu_instance_drawn = true;
 			}
 			else if (cpu_instances_offset_vectors.at(i).size() == 1) {
 				staticModelDraw(i);
