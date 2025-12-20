@@ -4,7 +4,7 @@
 
 class ThrowingScheduleTutorial {
 public:
-	std::vector<float> throw_at{ 2, 35, 35, 45, 60, 60, 60 };
+	std::vector<float> throw_at{ 25, 35, 35, 45, 60, 60, 60 };
 	std::vector<Vec3> thrown_from{ Vec3(0, 0, 1), Vec3(-1, 0, 1), Vec3(1, 0, 1), Vec3(-15, 0, 15), Vec3(-1, 0, 1), Vec3(1, 0, 1), Vec3(-15, 0, 15) };
 	std::vector<float> time_to_player{ 5, 6, 6, 5, 9, 9, 9 };
 	std::vector<Vec3> offset_from_player{ Vec3(0, 0, 0), Vec3(-1, 0, 0), Vec3(1, 0, 0), Vec3(0, 0, 0), Vec3(-1, 0, 0), Vec3(1, 0, 0), Vec3(0, 0, 0) };

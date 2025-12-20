@@ -290,6 +290,36 @@ void loadAllLevel(Core* core, TextureManager* tex_man, InstanceManager* instance
 	file.close();
 }
 
+void loadAllAudio(SoundManager* sound) {
+	sound->load("Audio/Rifle_Shot_Echo_-_Sound_Effect.wav");
+	sound->load("Audio/BossFight.wav");
+	sound->load("Audio/VoiceLines-01.wav");
+	sound->load("Audio/VoiceLines-02.wav");
+	sound->load("Audio/VoiceLines-03.wav");
+	sound->load("Audio/VoiceLines-04.wav");
+	sound->load("Audio/VoiceLines-05.wav");
+	sound->load("Audio/VoiceLines-06.wav");
+	sound->load("Audio/VoiceLines-07.wav");
+	sound->load("Audio/VoiceLines-08.wav");
+	sound->load("Audio/VoiceLines-09.wav");
+	sound->load("Audio/VoiceLines-10.wav");
+	sound->load("Audio/VoiceLines-11.wav");
+	sound->load("Audio/VoiceLines-12.wav");
+	sound->load("Audio/VoiceLines-13.wav");
+	sound->load("Audio/VoiceLines-14.wav");
+	sound->load("Audio/VoiceLines-15.wav");
+	sound->load("Audio/VoiceLines-16.wav");
+	sound->load("Audio/VoiceLines-17.wav");
+	sound->load("Audio/VoiceLines-18.wav");
+	sound->load("Audio/VoiceLines-19.wav");
+	sound->load("Audio/VoiceLines-20.wav");
+	sound->load("Audio/VoiceLines-21.wav");
+	sound->load("Audio/VoiceLines-22.wav");
+	sound->load("Audio/VoiceLines-23.wav");
+	sound->load("Audio/VoiceLines-24.wav");
+	sound->load("Audio/VoiceLinesTutoSkip.wav");
+}
+
 #define WIDTH 1280.0f
 #define HEIGHT 720.0f
 
@@ -321,7 +351,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	SoundManager sound_manager{};
 	//sound_manager.load("Audio/Doghole.wav");
 	//sound_manager.play("Audio/Doghole.wav");
-	sound_manager.load("Audio/Rifle_Shot_Echo_-_Sound_Effect.wav");
+	loadAllAudio(&sound_manager);
+	sound_manager.play("Audio/VoiceLines-01.wav");
+	
 	bool final_song_playing = false;
 
 	int damage_taken = 0;
@@ -351,14 +383,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 			in_tutorial = false;
 			damage_taken = 0;
 			t = -30;
-			sound_manager.load("Audio/BossFight.wav");
 		}
 		else if (in_tutorial && t > 70) {
 			in_tutorial = false;
 			damage_taken = 0;
 			current_animation = "death";
 			t = -25;
-			sound_manager.load("Audio/BossFight.wav");
 		}
 		else if (!in_tutorial && !final_song_playing && t > -20.852) {
 			sound_manager.play("Audio/BossFight.wav");
