@@ -23,7 +23,10 @@ std::string updateAnimation(AnimationInstance* animated, std::string current_ani
 			return current_animation;
 		}
 		animated->resetAnimationTime();
-		return "idle2";
+		if (current_animation == "idle2") {
+			return current_animation;
+		}
+		return "idle";
 	}
 	else {
 		return current_animation;
@@ -55,6 +58,7 @@ public:
 	Vec3 target_offset;
 	float time_to_player;
 	float current_time = 0;
+	bool hasAlreadyPastPlayer = false;  // If vase has already been checked for player collision
 
 	ThrownObject(Vec3 start, float time, Vec3 offset) {
 		starting_position = start;
@@ -85,11 +89,25 @@ public:
 			const int vase_index = 0;
 			Vec3 target = target_position + object.target_offset;
 			Vec3 end = (target - object.starting_position) * 2 + object.starting_position;
+			if (object.hasPastPlayer()) {
+				end += Vec3(0, -(object.current_time - object.time_to_player), 0);  // So that the vase drops steadily once past the player
+			}
 			manager->static_offset_vectors.at(vase_index) = interpolate(object.starting_position, end, (object.current_time + dt) / object.time_to_player / 2);
 			manager->static_rotation_quaternions.at(vase_index) = object.update(dt);
 			manager->staticModelDraw(vase_index);
 		}
 		std::erase_if(thrown_objects, [](ThrownObject object) { return object.shouldDespawn(); });
+	}
+
+	std::vector<ThrownObject> getCollisions() {
+		std::vector<ThrownObject> offsets{};
+		for (ThrownObject& object : thrown_objects) {
+			if (object.hasPastPlayer() && !object.hasAlreadyPastPlayer) {
+				offsets.push_back(object);
+				object.hasAlreadyPastPlayer = true;
+			}
+		}
+		return offsets;
 	}
 };
 
@@ -303,7 +321,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	SoundManager sound_manager{};
 	//sound_manager.load("Audio/Doghole.wav");
 	//sound_manager.play("Audio/Doghole.wav");
+	sound_manager.load("Audio/Rifle_Shot_Echo_-_Sound_Effect.wav");
 	bool final_song_playing = false;
+
+	int damage_taken = 0;
 
 	Timer timer;
 	float t = 0;
@@ -328,17 +349,20 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 		//shaders.updateConstantVS("StaticModelTextured", "staticMeshBuffer", "VP", &vp);
 		if (in_tutorial && window.keys['T']) {
 			in_tutorial = false;
+			damage_taken = 0;
 			t = -30;
 			sound_manager.load("Audio/BossFight.wav");
 		}
 		else if (in_tutorial && t > 70) {
 			in_tutorial = false;
+			damage_taken = 0;
 			current_animation = "death";
 			t = -25;
 			sound_manager.load("Audio/BossFight.wav");
 		}
 		else if (!in_tutorial && !final_song_playing && t > -20.852) {
 			sound_manager.play("Audio/BossFight.wav");
+			current_animation = "idle2";
 			final_song_playing = true;
 		}
 		
@@ -350,6 +374,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 					throwing_schedule_tutorial.offset_from_player.at(i));
 				i++;
 				throwing_schedule_tutorial.already_thrown++;
+				instance_manager.model_manager.animated_instances.at(0).resetAnimationTime();
 				current_animation = "roar";
 			}
 		}
@@ -364,7 +389,31 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 					boss_fight_throwing.offset_from_player.at(i));
 				i++;
 				boss_fight_throwing.already_thrown++;
+				instance_manager.model_manager.animated_instances.at(0).resetAnimationTime();
 				current_animation = "roar";
+			}
+		}
+
+		std::vector<ThrownObject> objects_to_check = vase_manager.getCollisions();
+		for (const ThrownObject& object : objects_to_check) {
+			int x_offset = static_cast<int>(std::round(object.target_offset.x));
+			int z_offset = static_cast<int>(std::round(object.target_offset.z));
+			int lean;
+			if (window.keys['A']) { lean = -1; }
+			else if (window.keys['D']) { lean = 1; }
+			else { lean = 0; }
+			float current_rotation = movement_handler.mouse_rotation_x;
+			// front and back vs sides
+			bool facing_forward = current_rotation < 1.75 * M_PI && current_rotation > 1.25 * M_PI || current_rotation < 0.75 * M_PI && current_rotation > 0.25 * M_PI;
+			if (current_rotation < 0.25 * M_PI || current_rotation > 1.25 * M_PI) {  // Invert lean offsets to match world
+				lean = -lean;
+			}
+			bool thrown_from_forward = object.starting_position.z < 10 || object.starting_position.z > 20;
+
+			if (facing_forward && (x_offset == lean && thrown_from_forward || z_offset == 0 && !thrown_from_forward)
+					|| !facing_forward && (z_offset == lean && !thrown_from_forward || x_offset == 0 && thrown_from_forward)) {
+				damage_taken++;
+				sound_manager.play("Audio/Rifle_Shot_Echo_-_Sound_Effect.wav");
 			}
 		}
 		

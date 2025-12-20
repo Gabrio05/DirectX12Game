@@ -4,7 +4,7 @@
 
 class HandleMovement {
 public:
-	float mouse_rotation_x = 4.5f;  // 0 to 2 PI, allowed to loop
+	float mouse_rotation_x = 1.5 * M_PI;  // 0 to 2 PI, allowed to loop
 	float mouse_rotation_y = 0.0f;  // - PI/2 to PI/2, not allowed to loop
 	float default_mouse_x;
 	float default_mouse_y;
