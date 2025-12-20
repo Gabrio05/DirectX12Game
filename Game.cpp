@@ -11,14 +11,22 @@
 #include "InstanceManagement.h"
 #include "Sound.h"
 #include <random>
+#include "ThrowingSchedule.h"
 // Properties -> Linker -> System -> Windows
 #include <d3dcompiler.h>
 #pragma comment(lib, "d3dcompiler.lib")
 
-void updateAnimation(AnimationInstance* animated, std::string current_animation, float dt) {
+std::string updateAnimation(AnimationInstance* animated, std::string current_animation, float dt) {
 	animated->update(current_animation, dt);
 	if (animated->animationFinished()) {
+		if (current_animation == "death") {
+			return current_animation;
+		}
 		animated->resetAnimationTime();
+		return "idle2";
+	}
+	else {
+		return current_animation;
 	}
 }
 
@@ -29,7 +37,7 @@ Vec3 interpolate(Vec3 p1, Vec3 p2, float t)
 
 class rotationHolder {
 public:
-	inline static const float rotation_time = 2.0f;
+	inline static const float rotation_time = 1.0f;
 	float current_t = 0.0f;
 	Vec3 rotation_axis = Vec3(1, 0, 0);
 
@@ -52,6 +60,7 @@ public:
 		starting_position = start;
 		target_offset = offset;
 		time_to_player = time;
+		rotation.rotation_axis = Cross(Vec3(0, 0, 15) + offset - start, -Vec3(0, 1, 0)).normalize();
 	}
 
 	Quaternion update(float dt) {
@@ -66,7 +75,7 @@ public:
 class ObjectThrowing {
 public:
 	std::vector<ThrownObject> thrown_objects;
-	const Vec3 target_position = Vec3(0, 1, 15);  // base target position is the same for all (add offset to it)
+	const Vec3 target_position = Vec3(0, 0, 15);  // base target position is the same for all (add offset to it)
 	void throwVase(Vec3 start, float time, Vec3 offset) {
 		thrown_objects.push_back({ start, time, offset });
 	}
@@ -286,11 +295,15 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	loadAllLevel(&core, &texture_manager, &instance_manager, "levelData.txt");
 
 	ObjectThrowing vase_manager{};
-	int thrown_vases = 0;
+	ThrowingScheduleTutorial throwing_schedule_tutorial{};
+	ThrowingScheduleBossFight boss_fight_throwing{};
+	bool in_tutorial = true;
+	std::string current_animation = "idle2";
 
 	SoundManager sound_manager{};
-	sound_manager.loadMusic("Doghole.wav");
-	sound_manager.playMusic();
+	//sound_manager.load("Audio/Doghole.wav");
+	//sound_manager.play("Audio/Doghole.wav");
+	bool final_song_playing = false;
 
 	Timer timer;
 	float t = 0;
@@ -313,15 +326,54 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
 		//shaders.updateConstantVS("StaticModelUntextured", "staticMeshBuffer", "VP", &vp);
 		//shaders.updateConstantVS("StaticModelTextured", "staticMeshBuffer", "VP", &vp);
+		if (in_tutorial && window.keys['T']) {
+			in_tutorial = false;
+			t = -30;
+			sound_manager.load("Audio/BossFight.wav");
+		}
+		else if (in_tutorial && t > 70) {
+			in_tutorial = false;
+			current_animation = "death";
+			t = -25;
+			sound_manager.load("Audio/BossFight.wav");
+		}
+		else if (!in_tutorial && !final_song_playing && t > -20.852) {
+			sound_manager.play("Audio/BossFight.wav");
+			final_song_playing = true;
+		}
+		
+		if (in_tutorial) {
+			int i = throwing_schedule_tutorial.already_thrown;
+			while (i < throwing_schedule_tutorial.throw_at.size() && throwing_schedule_tutorial.throw_at.at(i) < t) {
+				vase_manager.throwVase(throwing_schedule_tutorial.thrown_from.at(i),
+					throwing_schedule_tutorial.time_to_player.at(i),
+					throwing_schedule_tutorial.offset_from_player.at(i));
+				i++;
+				throwing_schedule_tutorial.already_thrown++;
+				current_animation = "roar";
+			}
+		}
+		else {
+			int i = boss_fight_throwing.already_thrown;
+			float bps = 150.0f / 60.0f;
+			float bps_2 = 225.0f / 60.0f;
+			while (i < boss_fight_throwing.throw_at.size() && (boss_fight_throwing.throw_at.at(i) < t * bps
+				|| boss_fight_throwing.throw_at.at(i) >= 232 && boss_fight_throwing.throw_at.at(i) - 232 < (t - 232 / bps) * bps_2)) {
+				vase_manager.throwVase(boss_fight_throwing.thrown_from.at(i),
+					boss_fight_throwing.time_to_player.at(i) / (t - 232 / bps < 0 ? bps : bps_2),
+					boss_fight_throwing.offset_from_player.at(i));
+				i++;
+				boss_fight_throwing.already_thrown++;
+				current_animation = "roar";
+			}
+		}
+		
+
 		core.beginRenderPass();
 
-		if (t > thrown_vases * 5.0f) {
-			vase_manager.throwVase(Vec3(0, 0, 0), 4, Vec3(thrown_vases, 0, 0));
-			thrown_vases++;
-		}
 		vase_manager.updateThrownObjects(&instance_manager, dt);
 
-		updateAnimation(&instance_manager.model_manager.animated_instances.at(0), "roar", dt);
+		current_animation = updateAnimation(&instance_manager.model_manager.animated_instances.at(0), current_animation, dt);
 
 		instance_manager.drawAll(t);
 

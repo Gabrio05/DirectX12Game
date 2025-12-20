@@ -155,6 +155,7 @@
     <ClInclude Include="Source\Timer.h" />
     <ClInclude Include="Source\Window.h" />
     <ClInclude Include="TextureData.h" />
+    <ClInclude Include="ThrowingSchedule.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
