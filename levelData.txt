@@ -2,18 +2,18 @@ static,Models/Vase_Set_66a.gem,10,10,10,-8,0,12,Models/Textures/TX_Vase_Set_66a_
 
 plane, the first static and first instance lines are required, do not modify them as that will break the code,
 
+instance,grid,10000,-100,-0.5,-100,2,0,0,0,0,2,3,3,3,Models/Grass_Sets_01a.gem,Models/Textures/TX_Grass_Sets_01a_ALB.png,Models/Textures/TX_Grass_Sets_01a_NH.png,
+
+static,Models/Scraggly_Bush_01a.gem,2,2,2,0,0,24,Models/Textures/TX_Scraggly_Bushes_01a_ALB.png,Models/Textures/TX_Scraggly_Bushes_01a_NH.png,
+
+sphere,20,50,1000,Models/Textures/qwantani_moon_noon_puresky.jpg,Models/Textures/black-image-8192x4096-rectangle.png,
+
 static,Models/acacia_003.gem,0.01,0.01,0.01,5,0,0,
 
 staticRepeat,10,0,0,
 
 staticRepeat,20,0,0,
 
-instance,grid,10000,-100,-0.5,-100,2,0,0,0,0,2,3,3,3,Models/Grass_Sets_01a.gem,Models/Textures/TX_Grass_Sets_01a_ALB.png,Models/Textures/TX_Grass_Sets_01a_NH.png,
-
-static,Models/Scraggly_Bush_01a.gem,2,2,2,0,0,24,Models/Textures/TX_Scraggly_Bushes_01a_ALB.png,Models/Textures/TX_Scraggly_Bushes_01a_NH.png,
-
 animated,
-
-sphere,20,50,1000,Models/Textures/qwantani_moon_noon_puresky.jpg,Models/Textures/black-image-8192x4096-rectangle.png,
 
 instance,line,100,10,0,0,3,0,0,10,10,10,Models/Takeout_Food_01a.gem,Models/Textures/TX_Takeout_Food_01a_ALB.png,Models/Textures/TX_Takeout_Food_01a_NH.png,

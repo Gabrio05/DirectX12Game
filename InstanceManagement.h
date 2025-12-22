@@ -149,7 +149,7 @@ public:
 	void instanceModelDraw(int i, bool first_gpu_instance_drawn = false) {
 		model_manager.static_models.at(i)->draw(core, psos, shaders, view_perspective_matrix, first_gpu_instance_drawn);
 	}
-	void drawAll(float t) {
+	void drawAll(float t, bool t_rex = false) {
 		// i = 0 is the thrown object and handled separatly to drawAll
 		bool first_gpu_instance_drawn = false;
 		shaders->updateConstantVS("Grass", "staticMeshBuffer", "TIME", &t);
@@ -171,6 +171,16 @@ public:
 		
 		animated_world_matrix = Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f));
 		animatedModelDraw();
+		if (t_rex) {
+			Quaternion rotation = MakeRotationQuaternion(Vec3(0, 1, 0), 0.5 * M_PI);
+			Matrix wow = rotation.toMatrix() * Matrix::scaling(Vec3(0.01f, 0.01, 0.01f)) * Matrix::translation(Vec3(-15, 0, 15));
+			animated_world_matrix = wow;
+			animatedModelDraw();
+			rotation = MakeRotationQuaternion(Vec3(0, 1, 0), 1.5 * M_PI);
+			wow = rotation.toMatrix() * Matrix::scaling(Vec3(0.01f, 0.01, 0.01f)) * Matrix::translation(Vec3(15, 0, 15));
+			animated_world_matrix = wow;
+			animatedModelDraw();
+		}
 		planeDraw();
 		sphereDraw(t);
 	}

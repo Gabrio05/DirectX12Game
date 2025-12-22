@@ -291,6 +291,7 @@ void loadAllLevel(Core* core, TextureManager* tex_man, InstanceManager* instance
 }
 
 void loadAllAudio(SoundManager* sound) {
+	// TODO REPORT!!! Change sky?!?
 	sound->load("Audio/Rifle_Shot_Echo_-_Sound_Effect.wav");
 	sound->load("Audio/BossFight.wav");
 	sound->load("Audio/VoiceLines-01.wav");
@@ -317,7 +318,111 @@ void loadAllAudio(SoundManager* sound) {
 	sound->load("Audio/VoiceLines-22.wav");
 	sound->load("Audio/VoiceLines-23.wav");
 	sound->load("Audio/VoiceLines-24.wav");
-	sound->load("Audio/VoiceLinesTutoSkip.wav");
+	sound->load("Audio/VoiceLineTutoSkip.wav");
+}
+
+struct playVoiceLines {
+	std::vector<float> play_at_tuto{
+		0, 7, 15, 25, 31,
+		34, 42, 50.5,
+		54.5, 61.5, 69.5, 73.5
+	};
+	std::vector<bool> special{
+		false, false, false, false, true,
+		false, false, true,
+		false, false, true, false
+	};
+	std::vector<float> play_at_boss{
+		-21, 21, 152
+	};
+	std::vector<std::string> voicelines{
+	"Audio/VoiceLines-01.wav",
+	"Audio/VoiceLines-02.wav",
+	"Audio/VoiceLines-03.wav",
+	"Audio/VoiceLines-04.wav",
+	"Audio/VoiceLines-05.wav",
+	"Audio/VoiceLines-07.wav",
+	"Audio/VoiceLines-08.wav",
+	"Audio/VoiceLines-09.wav",
+	"Audio/VoiceLines-11.wav",
+	"Audio/VoiceLines-12.wav",
+	"Audio/VoiceLines-13.wav",
+	"Audio/VoiceLines-16.wav",
+
+	"Audio/VoiceLines-17.wav",
+	"Audio/VoiceLines-18.wav",
+
+	"Audio/VoiceLines-19.wav",
+	"Audio/VoiceLines-20.wav",
+	"Audio/VoiceLines-21.wav",
+	"Audio/VoiceLines-22.wav",
+	"Audio/VoiceLines-23.wav",
+	"Audio/VoiceLines-24.wav"
+	};
+};
+
+int last_damage = 0;
+
+int playCorrectAudio(SoundManager* sound, int i, float t, bool in_tutorial, int damage) {
+	playVoiceLines play{};
+	if (in_tutorial) {
+		if (i < play.play_at_tuto.size() && t > play.play_at_tuto.at(i)) {
+			if (i == 4 && damage > last_damage) {
+				sound->play("Audio/VoiceLines-06.wav");
+				i++;
+				return i;
+			}
+			else if (i == 7 && damage > last_damage) {
+				sound->play("Audio/VoiceLines-10.wav");
+				i++;
+				return i;
+			}
+			else if (i == 10 && damage > last_damage) {
+				if (damage >= 4) {
+					sound->play("Audio/VoiceLines-15.wav");
+				}
+				else {
+					sound->play("Audio/VoiceLines-14.wav");
+				}
+				i++;
+				return i;
+			}
+			last_damage = damage;
+			sound->play(play.voicelines.at(i));
+			i++;
+		}
+	}
+	else {
+		if (i - 12 < play.play_at_boss.size() && t > play.play_at_boss.at(i - 12)) {
+			if (i == 14) {
+				std::string clip_to_play;
+				if (damage > 15) {
+					clip_to_play = "Audio/VoiceLines-19.wav";
+				}
+				else if (damage >= 10) {
+					clip_to_play = "Audio/VoiceLines-20.wav";
+				}
+				else if (damage >= 5) {
+					clip_to_play = "Audio/VoiceLines-21.wav";
+				}
+				else if (damage >= 2) {
+					clip_to_play = "Audio/VoiceLines-22.wav";
+				}
+				else if (damage >= 1) {
+					clip_to_play = "Audio/VoiceLines-23.wav";
+				}
+				else if (damage == 0) {
+					clip_to_play = "Audio/VoiceLines-24.wav";
+				}
+				sound->play(clip_to_play);
+				i++;
+				return i;
+			}
+			sound->play(play.voicelines.at(i));
+			i++;
+		}
+	}
+	return i;
 }
 
 #define WIDTH 1280.0f
@@ -352,7 +457,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 	//sound_manager.load("Audio/Doghole.wav");
 	//sound_manager.play("Audio/Doghole.wav");
 	loadAllAudio(&sound_manager);
-	sound_manager.play("Audio/VoiceLines-01.wav");
+	int audio_played = 0;
 	
 	bool final_song_playing = false;
 
@@ -383,8 +488,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 			in_tutorial = false;
 			damage_taken = 0;
 			t = -30;
+			audio_played = 12;
+			sound_manager.play("Audio/VoiceLineTutoSkip.wav");
 		}
-		else if (in_tutorial && t > 70) {
+		else if (in_tutorial && t > 75) {
 			in_tutorial = false;
 			damage_taken = 0;
 			current_animation = "death";
@@ -422,6 +529,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 				instance_manager.model_manager.animated_instances.at(0).resetAnimationTime();
 				current_animation = "roar";
 			}
+			if (i >= boss_fight_throwing.throw_at.size()) {
+				current_animation = "death";
+			}
 		}
 
 		std::vector<ThrownObject> objects_to_check = vase_manager.getCollisions();
@@ -446,6 +556,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 				sound_manager.play("Audio/Rifle_Shot_Echo_-_Sound_Effect.wav");
 			}
 		}
+		audio_played = playCorrectAudio(&sound_manager, audio_played, t, in_tutorial, damage_taken);
 		
 
 		core.beginRenderPass();
@@ -454,7 +565,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nC
 
 		current_animation = updateAnimation(&instance_manager.model_manager.animated_instances.at(0), current_animation, dt);
 
-		instance_manager.drawAll(t);
+		instance_manager.drawAll(t, t > 160.0f / (150.0f / 60.0f) && !in_tutorial);
 
 		core.finishFrame();
 	}

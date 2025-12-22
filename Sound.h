@@ -149,7 +149,7 @@ public:
 		}
 
 		// Submit the audio buffer to the first source voice
-		if (FAILED(hr = sourceVoice[0]->SubmitSourceBuffer(&buffer)))
+		if (FAILED(hr/* = sourceVoice[0]->SubmitSourceBuffer(&buffer)*/))
 		{
 			return false;
 		}
